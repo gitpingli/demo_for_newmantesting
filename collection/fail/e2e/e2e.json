@@ -1,0 +1,2577 @@
+{
+	"info": {
+		"_postman_id": "d13aaa62-1727-4d92-b017-2f6fb52263cd",
+		"name": "E2E Testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Check the status of heartbeat",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6051534e-3c26-4fdc-8c30-3b150540a8e5",
+						"exec": [
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(\"Response time is less than 5s\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+							"});",
+							"",
+							"var schema = {",
+							"    \"$schema\": \"http://json-schema.org/draft-07/schema\",",
+							"    \"$id\": \"http://example.com/example.json\",",
+							"    \"type\": \"object\",",
+							"    \"required\": [",
+							"        \"name\",",
+							"        \"description\",",
+							"        \"version\",",
+							"        \"status\",",
+							"        \"startUpAt\",",
+							"        \"releasedAt\",",
+							"        \"current\"",
+							"    ],",
+							"    \"additionalProperties\": true,",
+							"    \"properties\": {",
+							"        \"name\": {",
+							"            \"$id\": \"#/properties/name\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"description\": {",
+							"            \"$id\": \"#/properties/description\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"version\": {",
+							"            \"$id\": \"#/properties/version\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"status\": {",
+							"            \"$id\": \"#/properties/status\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"startUpAt\": {",
+							"            \"$id\": \"#/properties/startUpAt\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"releasedAt\": {",
+							"            \"$id\": \"#/properties/releasedAt\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"current\": {",
+							"            \"$id\": \"#/properties/current\",",
+							"            \"type\": [",
+							"                \"string\",",
+							"                \"object\"",
+							"                ]",
+							"        }",
+							"    }",
+							"};",
+							"",
+							"var data = pm.response.json();",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(data, schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.include(\"service-sherpa\");",
+							"    pm.expect(jsonData.version).to.match(/^\\d+\\.\\d+\\.\\d+$/);",
+							"    pm.expect(jsonData.status).to.eql(\"UP\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/heartbeat",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"heartbeat"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login Sherpa to get accese token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "31260660-eca1-42df-8ca0-10376ef4ac79",
+						"exec": [
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"    pm.environment.set(\"jwtToken\", pm.response.json().data);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List GW applications",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "dd0ddcd2-6785-4c82-94c1-90b0c6bc85fd",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "a0caf69d-60aa-49f2-bd23-d3d71d3ab7fd",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"array\",",
+							"      \"items\": [",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"name\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"owner\": {",
+							"              \"type\": \"string\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"name\",",
+							"            \"owner\"",
+							"          ]",
+							"        }",
+							"      ]",
+							"    },",
+							"    \"meta\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"total\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"page\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"per_page\": {",
+							"          \"type\": \"integer\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"total\",",
+							"        \"page\",",
+							"        \"per_page\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\",",
+							"    \"meta\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an application in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "ad01e296-f193-4e39-99c2-56b339932d89",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"const appName = `${pm.variables.replaceIn('{{$randomFirstName}}')}-${pm.variables.replaceIn('{{$timestamp}}')}`;",
+							"pm.variables.set(\"appName\", appName);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "81d049ad-b547-4ac8-b518-2c7fe8d6dcdc",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"owner\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"name\",",
+							"        \"owner\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\",",
+							"        \"deleted\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"appName\"));",
+							"  pm.expect(jsonData.data.owner).to.deep.equal(pm.environment.get(\"owner\"));",
+							"  pm.variables.set(\"appId\", jsonData.data.id);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{appName}}\",\n    \"owner\": \"{{owner}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read details of an application in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "0fde94bd-c34b-4952-8a5d-5b782036f178",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "30fcc9ef-d1d5-4dce-9bfe-2f680f14ecbf",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"owner\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"keys\": {",
+							"          \"type\": \"array\",",
+							"          \"items\": {}",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"name\",",
+							"        \"owner\",",
+							"        \"deleted\",",
+							"        \"createdAt\",",
+							"        \"updatedAt\",",
+							"        \"keys\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"appName\"));",
+							"  pm.expect(jsonData.data.owner).to.deep.equal(pm.environment.get(\"owner\"));;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications/{{appId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications",
+						"{{appId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update details of an application in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "fcaab087-e14c-4fab-866f-810c889fe5af",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"pm.variables.set(\"updatedAppName\", `updated-${pm.variables.get(\"appName\")}`)",
+							"pm.variables.set(\"updatedAppOwner\", `updated-${pm.environment.get(\"owner\")}`)"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "0a11c1b9-34d5-4d3c-8c13-19a0df56cfe2",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"owner\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"name\",",
+							"        \"owner\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\",",
+							"        \"deleted\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"updatedAppName\"));",
+							"  pm.expect(jsonData.data.owner).to.deep.equal(pm.variables.get(\"updatedAppOwner\"));;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{updatedAppName}}\",\n    \"owner\": \"{{updatedAppOwner}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications/{{appId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications",
+						"{{appId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete an application in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f30b4e9d-5b9d-4379-a910-d0311d5aca01",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "111110d3-fba5-4af9-b0d5-76a153c5d9ce",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"owner\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"name\",",
+							"        \"owner\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\",",
+							"        \"deleted\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.deleted).to.be.true;",
+							"});",
+							"",
+							"pm.variables.clear();",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications/{{appId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications",
+						"{{appId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List GW services",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "3aab79ff-923b-44c6-b871-42c170931cd3",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "e7374bb8-1053-43a4-af48-b3ddb9bedc3e",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"array\",",
+							"      \"items\": [",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"name\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"meta\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"apiId\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"accessSlug\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"targetUrl\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"authMode\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"provideBy\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"active\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"name\",",
+							"            \"meta\",",
+							"            \"apiId\",",
+							"            \"accessSlug\",",
+							"            \"targetUrl\",",
+							"            \"authMode\",",
+							"            \"provideBy\",",
+							"            \"active\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\"",
+							"          ]",
+							"        }",
+							"      ]",
+							"    },",
+							"    \"meta\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"total\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"page\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"per_page\": {",
+							"          \"type\": \"integer\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"total\",",
+							"        \"page\",",
+							"        \"per_page\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\",",
+							"    \"meta\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a service in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "2212e081-c60c-4a8f-84c8-19826f83bf65",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"const serviceName = `${pm.variables.replaceIn('{{$randomFirstName}}')}-${pm.variables.replaceIn('{{$timestamp}}')}`;",
+							"pm.variables.set(\"serviceName\", serviceName);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "6d3194fb-d2cc-4ab2-b1a4-77a44f93e355",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"authMode\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"active\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"targetUrl\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"accessSlug\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"provideBy\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"meta\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"apiId\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"authMode\",",
+							"        \"active\",",
+							"        \"deleted\",",
+							"        \"name\",",
+							"        \"targetUrl\",",
+							"        \"accessSlug\",",
+							"        \"provideBy\",",
+							"        \"meta\",",
+							"        \"apiId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"serviceName\"));",
+							"  pm.expect(jsonData.data.provideBy).to.deep.equal(pm.environment.get(\"owner\"));",
+							"  pm.expect(jsonData.data.authMode).to.be.true;",
+							"  pm.expect(jsonData.data.active).to.be.true;",
+							"  pm.variables.set(\"serviceId\", jsonData.data.id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{serviceName}}\",\n    \"targetUrl\": \"{{targetUrl}}\",\n    \"accessSlug\": \"{{serviceName}}\",\n    \"provideBy\": \"{{owner}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read details of a service in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "1bd59205-4081-4011-95f9-792461c76734",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "2b5d6155-9e3e-4887-b049-c7feb50f0bde",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"authMode\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"active\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"targetUrl\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"accessSlug\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"provideBy\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"meta\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"apiId\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"authMode\",",
+							"        \"active\",",
+							"        \"deleted\",",
+							"        \"name\",",
+							"        \"targetUrl\",",
+							"        \"accessSlug\",",
+							"        \"provideBy\",",
+							"        \"meta\",",
+							"        \"apiId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"serviceName\"));",
+							"  pm.expect(jsonData.data.provideBy).to.deep.equal(pm.environment.get(\"owner\"));",
+							"  pm.expect(jsonData.data.authMode).to.be.true;",
+							"  pm.expect(jsonData.data.active).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services/{{serviceId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services",
+						"{{serviceId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update details of a service in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "de26fbdb-6962-4243-874a-608d7129079c",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"pm.variables.set(\"updatedServiceName\", `updated-${pm.variables.get(\"serviceName\")}`)",
+							"pm.variables.set(\"updatedOwner\", `updated-${pm.environment.get(\"owner\")}`)"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "1ebf2f9d-1a0e-4f0f-b387-4b0ea089e699",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"authMode\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"active\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"targetUrl\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"accessSlug\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"provideBy\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"meta\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"apiId\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"authMode\",",
+							"        \"active\",",
+							"        \"deleted\",",
+							"        \"name\",",
+							"        \"targetUrl\",",
+							"        \"accessSlug\",",
+							"        \"provideBy\",",
+							"        \"meta\",",
+							"        \"apiId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"updatedServiceName\"));",
+							"  pm.expect(jsonData.data.provideBy).to.deep.equal(pm.variables.get(\"updatedOwner\"));",
+							"  pm.expect(jsonData.data.authMode).to.be.false;",
+							"  pm.expect(jsonData.data.active).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{updatedServiceName}}\",\n    \"targetUrl\": \"{{targetUrl}}\",\n    \"accessSlug\": \"{{serviceName}}\",\n    \"provideBy\": \"{{updatedOwner}}\",\n    \"authMode\": false,\n    \"active\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services/{{serviceId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services",
+						"{{serviceId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete a service in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "8abed2e4-9cfb-4b64-89cc-a4ef1736a7ed",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "b7871ccc-db1b-4996-b993-6c6547ee5a34",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"authMode\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"active\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"targetUrl\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"accessSlug\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"provideBy\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"meta\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"apiId\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"authMode\",",
+							"        \"active\",",
+							"        \"deleted\",",
+							"        \"name\",",
+							"        \"targetUrl\",",
+							"        \"accessSlug\",",
+							"        \"provideBy\",",
+							"        \"meta\",",
+							"        \"apiId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.deleted).to.be.true;",
+							"});",
+							"",
+							"pm.variables.clear();",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services/{{serviceId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services",
+						"{{serviceId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an application for Key in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "6fd2ca82-21d5-43ed-bc46-6ac765c5bc0a",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"const appName = `${pm.variables.replaceIn('{{$randomFirstName}}')}-${pm.variables.replaceIn('{{$timestamp}}')}`;",
+							"pm.variables.set(\"appName\", appName);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "981eb2c7-5d5d-42e6-91e3-507834105c18",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"owner\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"name\",",
+							"        \"owner\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\",",
+							"        \"deleted\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"appName\"));",
+							"  pm.expect(jsonData.data.owner).to.deep.equal(pm.environment.get(\"owner\"));",
+							"  pm.variables.set(\"appId\", jsonData.data.id);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{appName}}\",\n    \"owner\": \"{{owner}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a service for key in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "1eedb72c-9913-46d6-ae21-9682da1fcb92",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							"",
+							"const serviceName = `${pm.variables.replaceIn('{{$randomFirstName}}')}-${pm.variables.replaceIn('{{$timestamp}}')}`;",
+							"pm.variables.set(\"serviceName\", serviceName);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "dbcd10f0-a14b-42c7-9ea5-44b474451f39",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"authMode\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"active\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"name\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"targetUrl\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"accessSlug\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"provideBy\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"meta\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"apiId\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"authMode\",",
+							"        \"active\",",
+							"        \"deleted\",",
+							"        \"name\",",
+							"        \"targetUrl\",",
+							"        \"accessSlug\",",
+							"        \"provideBy\",",
+							"        \"meta\",",
+							"        \"apiId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.name).to.deep.equal(pm.variables.get(\"serviceName\"));",
+							"  pm.expect(jsonData.data.provideBy).to.deep.equal(pm.environment.get(\"owner\"));",
+							"  pm.expect(jsonData.data.authMode).to.be.true;",
+							"  pm.expect(jsonData.data.active).to.be.true;",
+							"  pm.variables.set(\"serviceId\", jsonData.data.id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{serviceName}}\",\n    \"targetUrl\": \"{{targetUrl}}\",\n    \"accessSlug\": \"{{serviceName}}\",\n    \"provideBy\": \"{{owner}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List GW keys",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "9591dd5d-703e-46d1-a5b6-4d741b7b2db4",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "160a90ba-70f9-41d2-9102-8f8cf069319c",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"array\",",
+							"      \"items\": [",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        },",
+							"        {",
+							"          \"type\": \"object\",",
+							"          \"properties\": {",
+							"            \"id\": {",
+							"              \"type\": \"integer\"",
+							"            },",
+							"            \"hash\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"value\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"deleted\": {",
+							"              \"type\": \"boolean\"",
+							"            },",
+							"            \"createdAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"updatedAt\": {",
+							"              \"type\": \"string\"",
+							"            },",
+							"            \"applicationId\": {",
+							"              \"type\": \"integer\"",
+							"            }",
+							"          },",
+							"          \"required\": [",
+							"            \"id\",",
+							"            \"hash\",",
+							"            \"value\",",
+							"            \"deleted\",",
+							"            \"createdAt\",",
+							"            \"updatedAt\",",
+							"            \"applicationId\"",
+							"          ]",
+							"        }",
+							"      ]",
+							"    },",
+							"    \"meta\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"total\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"page\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"per_page\": {",
+							"          \"type\": \"integer\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"total\",",
+							"        \"page\",",
+							"        \"per_page\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\",",
+							"    \"meta\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/keys",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"keys"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a key in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "76c488da-d123-41ec-bf8a-88c789302d30",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "79f3b93b-f58c-4abb-9685-dd35d3aba6d0",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"hash\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"value\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"applicationId\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"hash\",",
+							"        \"value\",",
+							"        \"applicationId\",",
+							"        \"updatedAt\",",
+							"        \"createdAt\",",
+							"        \"deleted\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"    const jsonData = pm.response.json();",
+							"    pm.variables.set(\"keyId\", jsonData.data.id);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.applicationId).to.deep.equal(parseInt(pm.variables.get(\"appId\")));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"applicationId\": \"{{appId}}\",\n    \"serviceIds\": [\n        \"{{serviceId}}\"\n    ],\n    \"policyIds\": []\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/keys",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"keys"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Read details of a key in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "83f62941-f311-446c-9292-e2aaf7fb702e",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "c24bb11a-e416-4466-b348-c859f0c43a28",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"hash\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"value\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"applicationId\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"services\": {",
+							"          \"type\": \"array\",",
+							"          \"items\": [",
+							"            {",
+							"              \"type\": \"object\",",
+							"              \"properties\": {",
+							"                \"id\": {",
+							"                  \"type\": \"integer\"",
+							"                },",
+							"                \"name\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"meta\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"apiId\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"accessSlug\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"targetUrl\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"authMode\": {",
+							"                  \"type\": \"boolean\"",
+							"                },",
+							"                \"provideBy\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"active\": {",
+							"                  \"type\": \"boolean\"",
+							"                },",
+							"                \"deleted\": {",
+							"                  \"type\": \"boolean\"",
+							"                },",
+							"                \"createdAt\": {",
+							"                  \"type\": \"string\"",
+							"                },",
+							"                \"updatedAt\": {",
+							"                  \"type\": \"string\"",
+							"                }",
+							"              },",
+							"              \"required\": [",
+							"                \"id\",",
+							"                \"name\",",
+							"                \"meta\",",
+							"                \"apiId\",",
+							"                \"accessSlug\",",
+							"                \"targetUrl\",",
+							"                \"authMode\",",
+							"                \"provideBy\",",
+							"                \"active\",",
+							"                \"deleted\",",
+							"                \"createdAt\",",
+							"                \"updatedAt\"",
+							"              ]",
+							"            }",
+							"          ]",
+							"        },",
+							"        \"policies\": {",
+							"          \"type\": \"array\",",
+							"          \"items\": {}",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"hash\",",
+							"        \"value\",",
+							"        \"deleted\",",
+							"        \"createdAt\",",
+							"        \"updatedAt\",",
+							"        \"applicationId\",",
+							"        \"services\",",
+							"        \"policies\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.applicationId).to.deep.equal(parseInt(pm.variables.get(\"appId\")));",
+							"  pm.expect(jsonData.data.services[0].id).to.deep.equal(parseInt(pm.variables.get(\"serviceId\")));",
+							"  pm.expect(jsonData.data.policies).to.deep.equal([]);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/keys/{{keyId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"keys",
+						"{{keyId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete a key in GW",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "d65d000e-6709-47c3-a9df-c2b8fe4ffae1",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "f05b35a1-619c-4168-ab09-2502d14cb17f",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"const schema = {",
+							"  \"$schema\": \"http://json-schema.org/draft-04/schema#\",",
+							"  \"type\": \"object\",",
+							"  \"properties\": {",
+							"    \"data\": {",
+							"      \"type\": \"object\",",
+							"      \"properties\": {",
+							"        \"id\": {",
+							"          \"type\": \"integer\"",
+							"        },",
+							"        \"hash\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"value\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"deleted\": {",
+							"          \"type\": \"boolean\"",
+							"        },",
+							"        \"createdAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"updatedAt\": {",
+							"          \"type\": \"string\"",
+							"        },",
+							"        \"applicationId\": {",
+							"          \"type\": \"integer\"",
+							"        }",
+							"      },",
+							"      \"required\": [",
+							"        \"id\",",
+							"        \"hash\",",
+							"        \"value\",",
+							"        \"deleted\",",
+							"        \"createdAt\",",
+							"        \"updatedAt\",",
+							"        \"applicationId\"",
+							"      ]",
+							"    }",
+							"  },",
+							"  \"required\": [",
+							"    \"data\"",
+							"  ]",
+							"};",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"  const jsonData = pm.response.json();",
+							"  pm.expect(jsonData.data.deleted).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/keys/{{keyId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"keys",
+						"{{keyId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete GW service for key",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "07888cbc-bf10-4740-a843-7383c68d432d",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "50f19038-b7fd-4a27-80be-745385fc56d1",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/services/{{serviceId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"services",
+						"{{serviceId}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete GW application for key",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "c4ac1fcd-f3f4-4bde-ae98-228b0be5c2e1",
+						"exec": [
+							"pm.request.headers.add({ ",
+							"    key: 'Authorization',",
+							"    value: `Bearer ${pm.environment.get(\"jwtToken\")}`",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "ea48f81d-a5fe-4bf0-984d-469a042c3e4a",
+						"exec": [
+							"const maxResponseTime = pm.environment.get(\"maxResponseTime\"); ",
+							"",
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(`Response time is less than ${maxResponseTime/1000}s`, function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(parseInt(maxResponseTime));",
+							"});",
+							"",
+							"pm.variables.clear();",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}{{gwPath}}/applications/{{appId}}",
+					"host": [
+						"{{baseUrl}}{{gwPath}}"
+					],
+					"path": [
+						"applications",
+						"{{appId}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"id": "7c96a36d-4c79-442a-b429-d95888e55e46",
+			"key": "jwtToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"protocolProfileBehavior": {}
+}

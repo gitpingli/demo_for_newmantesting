@@ -1,0 +1,122 @@
+{
+	"info": {
+		"_postman_id": "c8700b3c-b924-4a60-a096-727dd38c8b20",
+		"name": "Smoke Testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Check the status of heartbeat",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6051534e-3c26-4fdc-8c30-3b150540a8e5",
+						"exec": [
+							"pm.test(\"Status code is 500\", function () {",
+							"    pm.response.to.have.status(500);",
+							"});",
+							"",
+							"pm.test(\"Response time is less than 1ms\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(1);",
+							"});",
+							"",
+							"var schema = {",
+							"    \"$schema\": \"http://json-schema.org/draft-07/schema\",",
+							"    \"$id\": \"http://example.com/example.json\",",
+							"    \"type\": \"object\",",
+							"    \"required\": [",
+							"        \"name\",",
+							"        \"description\",",
+							"        \"version\",",
+							"        \"status\",",
+							"        \"startUpAt\",",
+							"        \"releasedAt\",",
+							"        \"current\"",
+							"    ],",
+							"    \"additionalProperties\": true,",
+							"    \"properties\": {",
+							"        \"name\": {",
+							"            \"$id\": \"#/properties/name\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"description\": {",
+							"            \"$id\": \"#/properties/description\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"version\": {",
+							"            \"$id\": \"#/properties/version\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"status\": {",
+							"            \"$id\": \"#/properties/status\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"startUpAt\": {",
+							"            \"$id\": \"#/properties/startUpAt\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"releasedAt\": {",
+							"            \"$id\": \"#/properties/releasedAt\",",
+							"            \"type\": \"string\"",
+							"        },",
+							"        \"current\": {",
+							"            \"$id\": \"#/properties/current\",",
+							"            \"type\": [",
+							"                \"string\",",
+							"                \"object\"",
+							"                ]",
+							"        }",
+							"    }",
+							"};",
+							"",
+							"var data = pm.response.json();",
+							"",
+							"pm.test('Schema is valid', function() {",
+							"  pm.expect(tv4.validate(data, schema)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Validate response field\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.name).to.include(\"service-sherpa\");",
+							"    pm.expect(jsonData.version).to.match(/^\\d+\\.\\d+\\.\\d+$/);",
+							"    pm.expect(jsonData.status).to.eql(\"UP\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/heartbeat",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"heartbeat"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"id": "7c96a36d-4c79-442a-b429-d95888e55e46",
+			"key": "jwtToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
