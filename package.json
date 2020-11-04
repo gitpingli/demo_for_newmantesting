@@ -1,0 +1,37 @@
+{
+  "name": "@console/console-core-test-service",
+  "version": "1.13.0",
+  "description": "Console Core Service Automation Test Suite",
+  "main": "index.js",
+  "scripts": {
+    "buildA:integration": "newman run collection/integration/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 --reporters cli,json,junit --reporter-junit-export outputresult_integartion.xml --reporter-json-export outputresult_integration.json",
+    "buildA:e2e": "newman run collection/e2e/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 --reporters cli,json,junit --reporter-junit-export outputresult_e2e.xml --reporter-json-export outputresult_e2e.json",
+    "buildA:smoke": "newman run collection/smoke/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 --reporters cli,json,junit --reporter-junit-export outputresult_smoke.xml --reporter-json-export outputresult_smoke.json",
+    "buildA:integration2": "newman run collection/integration/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 -r @reportportal/reportportal --reporter-@reportportal/reportportal-debug=true --reporter-@reportportal/reportportal-endpoint=http://127.0.0.1:8080/api/v1 --reporter-@reportportal/reportportal-token=252148ac-b24a-46ff-953c-b9e2a4b8b919 --reporter-@reportportal/reportportal-launch='Integration Testing' --reporter-@reportportal/reportportal-project=TEST -x",
+    "buildA:e2e2": "newman run collection/e2e/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 -r @reportportal/reportportal --reporter-@reportportal/reportportal-debug=true --reporter-@reportportal/reportportal-endpoint=http://127.0.0.1:8080/api/v1 --reporter-@reportportal/reportportal-token=252148ac-b24a-46ff-953c-b9e2a4b8b919 --reporter-@reportportal/reportportal-launch='E2E Testing' --reporter-@reportportal/reportportal-project=TEST -x",
+    "buildA:smoke2": "newman run collection/smoke/buildA.json -k --delay-request 200 --timeout-script 300000 --timeout-request 300000 -r @reportportal/reportportal --reporter-@reportportal/reportportal-debug=true --reporter-@reportportal/reportportal-endpoint=http://127.0.0.1:8080/api/v1 --reporter-@reportportal/reportportal-token=252148ac-b24a-46ff-953c-b9e2a4b8b919 --reporter-@reportportal/reportportal-launch='Smoke Testing' --reporter-@reportportal/reportportal-project=TEST -x",
+    "publish:after": "git push && git push --tags",
+    "publish:major": "npm version major && npm run publish:after",
+    "publish:minor": "npm version minor && npm run publish:after",
+    "publish:patch": "npm version patch && npm run publish:after"
+  },
+  "keywords": [
+    "test",
+    "automation",
+    "platform",
+    "api"
+  ],
+  "author": "Ping Li",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iixlabs/console-core-test-service"
+  },
+  "dependencies": {
+    "newman": "^4.5.7",
+    "newman-reporter-html": "^1.0.5"
+  },
+  "devDependencies": {
+    "@reportportal/newman-reporter-reportportal": "0.0.23"
+  }
+}
